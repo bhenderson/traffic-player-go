@@ -10,6 +10,33 @@ import (
 
 type lineMap map[string](chan string)
 
+type broadcaster struct {
+    sender interface{}
+    recievers [](chan string)
+}
+
+func (b *broadcaster) makeSender(c interface{}) {
+    b.sender = c
+    if !b.recievers {
+        b.recievers = make([](chan string))
+    }
+    go func() {
+        for {
+            msg := <-b.sender
+            for rec := range b.recievers {
+                go func() { rec <- msg }()
+            }
+        }
+    }()
+    return b.sender
+}
+
+func (b *broadcaster) makeRec() (chan string) {
+    c := make(chan string)
+    b.recievers = append(b.recievers, c)
+    return c
+}
+
 /*
     Take input at some unknown rate and scale it down per type.
     We scale per type because if one type was coming in at 99% it would
@@ -23,6 +50,9 @@ type lineMap map[string](chan string)
 func main() {
     lm := make(lineMap)
     in := reader()
+
+    s  := make(broadcaster)
+    s.makeSender(time.Ticker)
 
     for {
         msg, ok := <-in
@@ -54,28 +84,6 @@ func prefix(lm lineMap, msg string) {
 // keep track of how many per second you get.
 // then replay back a percentage of that.
 func scale(rec chan string) {
-    ticker := time.Tick(time.Second)
-    msgs := []string
-
-    for {
-        select {
-        case msg := <-rec:
-            msgs = append(msgs, msg)
-        case <-ticker:
-            go printMsgs(msgs)
-            // clear
-            msgs = msgs[:0]
-        }
-    }
-}
-
-func printMsgs(msgs []string) {
-    x := len(msgs)
-    amt := time.Millisecond * 1000 * x / 60 // msgs/second
-    for msg := range msgs {
-        time.Sleep(amt)
-        printMsg(msg)
-    }
 }
 
 func printMsg(msg string) {
