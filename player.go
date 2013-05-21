@@ -8,6 +8,7 @@ import (
     // "math/rand"
 )
 
+var done chan string
 type lineMap map[string](chan string)
 
 type ticker struct {
@@ -28,26 +29,25 @@ type ticker struct {
 func main() {
     lm := make(lineMap)
     in := reader()
-    done := make(chan string)
+    done = make(chan string)
 
-    for msg := range in {
-        go prefix(lm, msg, done)
-    }
-
-    go func() {
-        for name := range done {
+    for {
+        select {
+        case msg, ok := <-in:
+            if !ok { in = nil; break }
+            go prefix(lm, msg)
+        // run forever
+        // use select as a mutex so we don't add to lm and delete at the same
+        // time?
+        case name := <-done:
+            fmt.Println("closing", name)
             delete(lm, name)
         }
-    }()
-
-    // sleep until they are all done
-    for len(lm) > 0 {
-        time.Sleep(time.Second)
     }
 }
 
 // per msg
-func prefix(lm lineMap, msg string, done chan string) {
+func prefix(lm lineMap, msg string) {
     pre := msg[:4]
 
     rec, ok := lm[pre]
@@ -55,7 +55,7 @@ func prefix(lm lineMap, msg string, done chan string) {
     if !ok {
         rec = make(chan string)
         lm[pre] = rec
-        go scale(pre, rec, done)
+        go scale(pre, rec)
     }
 
     rec <- msg
@@ -66,10 +66,19 @@ func prefix(lm lineMap, msg string, done chan string) {
 // then replay back a percentage of that.
 // the "per second" doesn't have to be synced with other types as it averages
 // out over time. Also, remove rec from lineMap if not received for a while.
-func scale(name string, rec chan string, done chan string) {
+func scale(name string, rec chan string) {
     count := 0
     t := time.Tick(time.Second)
+    i := 0
 
+    for {
+        for i := 0; i < 10; i++ {
+            msg, ok := <-rec
+            if i == 0 { printMsg(msg) }
+        }
+    }
+    // is printing 10% of the messages within 1 sec different than just 10% of
+    // the messages?
     for {
         select {
         case msg := <-rec:
@@ -79,11 +88,16 @@ func scale(name string, rec chan string, done chan string) {
             }
             count += 1
         case <-t:
-            // close if none received
             if count == 0 {
+                i += 1
+            } else {
+                i = 0
+            }
+
+            // close after 5 times of 0 count
+            if i == 5 {
                 done <- name
-                fmt.Println(name, "is done")
-                break
+                return
             }
             count = 0
         }
