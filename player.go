@@ -5,6 +5,7 @@ import (
     "fmt"
     "time"
     "os"
+    "runtime"
     // "math/rand"
 )
 
@@ -27,6 +28,8 @@ type ticker struct {
     100qps * 10%        == 10
 */
 func main() {
+    runtime.GOMAXPROCS(1)
+
     lm := make(lineMap)
     in := reader()
     done = make(chan string)
@@ -68,27 +71,30 @@ func prefix(lm lineMap, msg string) {
 // out over time. Also, remove rec from lineMap if not received for a while.
 func scale(name string, rec chan string) {
     count := 0
-    t := time.Tick(time.Second)
     i := 0
+    last := 0
+    t := time.Tick(time.Second)
 
-    for {
-        for i := 0; i < 10; i++ {
-            msg, ok := <-rec
-            if i == 0 { printMsg(msg) }
-        }
-    }
-    // is printing 10% of the messages within 1 sec different than just 10% of
-    // the messages?
     for {
         select {
         case msg := <-rec:
             // print 10% of the messages
             if count % 10 == 0 {
                 printMsg(count, msg)
+                // don't let grow forever
+                // it's ok to reset if we just printed one.
+                count = 0
             }
             count += 1
         case <-t:
-            if count == 0 {
+            // don't reset count. we only are trying to cleanup. 
+            // count can be useful for a strict qps
+            // if 15 qps
+            // if reset count, output == 1qps
+            // if we don't, output == 3/2qps
+
+            // keep track of every second we don't get any
+            if last == count {
                 i += 1
             } else {
                 i = 0
@@ -99,7 +105,7 @@ func scale(name string, rec chan string) {
                 done <- name
                 return
             }
-            count = 0
+            last = count
         }
     }
 }
