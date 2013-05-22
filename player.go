@@ -12,11 +12,6 @@ import (
 var done chan string
 type lineMap map[string](chan string)
 
-type ticker struct {
-    sender <-chan time.Time
-    recievers [](chan time.Time)
-}
-
 /*
     Take input at some unknown rate and scale it down per type.
     We scale per type because if one type was coming in at 99% it would
@@ -128,27 +123,4 @@ func reader() (in chan string) {
         close(in)
     } ()
     return
-}
-
-func initTicker() *ticker {
-    t := &ticker{}
-    t.sender = time.Tick(time.Second)
-    t.recievers = make([](chan time.Time), 0)
-
-    go func() {
-        for now := range t.sender {
-            for _, rec := range t.recievers {
-                // don't put this in an annoymous function
-                rec <- now
-            }
-        }
-    }()
-
-    return t
-}
-
-func (t *ticker) Register() (chan time.Time) {
-    c := make(chan time.Time)
-    t.recievers = append(t.recievers, c)
-    return c
 }
