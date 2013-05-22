@@ -40,12 +40,19 @@ func main() {
         case name := <-done:
             fmt.Println("closing", name)
             delete(lm, name)
+            // TODO don't exit program.
+            if len(lm) == 0 {
+                return
+            }
         }
+
     }
 }
 
 // per msg
 func prefix(lm lineMap, msg string) {
+    // msg == 'aaaa:Hi this is my message'
+    // type function
     pre := msg[:4]
 
     rec, ok := lm[pre]
@@ -66,9 +73,7 @@ func prefix(lm lineMap, msg string) {
 // out over time. Also, remove rec from lineMap if not received for a while.
 func scale(name string, rec chan string) {
     count := 0
-    i := 0
-    last := 0
-    t := time.Tick(time.Second)
+    var t <-chan time.Time
 
     for {
         select {
@@ -78,29 +83,14 @@ func scale(name string, rec chan string) {
                 printMsg(count, msg)
                 // don't let grow forever
                 // it's ok to reset if we just printed one.
-                count = 0
+                // count = 0
             }
             count += 1
+            // reset timer
+            t = time.After(5 * time.Second)
         case <-t:
-            // don't reset count. we only are trying to cleanup. 
-            // count can be useful for a strict qps
-            // if 15 qps
-            // if reset count, output == 1qps
-            // if we don't, output == 3/2qps
-
-            // keep track of every second we don't get any
-            if last == count {
-                i += 1
-            } else {
-                i = 0
-            }
-
-            // close after 5 times of 0 count
-            if i == 5 {
-                done <- name
-                return
-            }
-            last = count
+            done <- name
+            return
         }
     }
 }
