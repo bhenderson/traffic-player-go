@@ -78,14 +78,17 @@ func scale(name string, rec chan string) {
     for {
         select {
         case msg := <-rec:
-            // print 10% of the messages
-            if count % 10 == 0 {
-                printMsg(count, msg)
+            if count == 0 {
+                printMsg(msg)
                 // don't let grow forever
                 // it's ok to reset if we just printed one.
                 // count = 0
             }
             count += 1
+            // print 10% of the messages
+            if count >= 10 {
+                count = 0
+            }
             // reset timer
             t = time.After(5 * time.Second)
         case <-t:
