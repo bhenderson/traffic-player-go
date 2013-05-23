@@ -3,24 +3,25 @@ package main
 import (
     "bufio"
     "fmt"
-    "time"
     "os"
     "runtime"
+    "time"
     // "math/rand"
 )
 
 var done chan string
+
 type lineMap map[string](chan string)
 
 /*
-    Take input at some unknown rate and scale it down per type.
-    We scale per type because if one type was coming in at 99% it would
-    overshadow the other types.
+   Take input at some unknown rate and scale it down per type.
+   We scale per type because if one type was coming in at 99% it would
+   overshadow the other types.
 
-    100qps
-    1000 lines in 1 sec == 1000qps
-    100 lines of type x == 10%
-    100qps * 10%        == 10
+   100qps
+   1000 lines in 1 sec == 1000qps
+   100 lines of type x == 10%
+   100qps * 10%        == 10
 */
 func main() {
     runtime.GOMAXPROCS(1)
@@ -32,7 +33,10 @@ func main() {
     for {
         select {
         case msg, ok := <-in:
-            if !ok { in = nil; break }
+            if !ok {
+                in = nil
+                break
+            }
             go prefix(lm, msg)
         // run forever
         // use select as a mutex so we don't add to lm and delete at the same
@@ -80,9 +84,6 @@ func scale(name string, rec chan string) {
         case msg := <-rec:
             if count == 0 {
                 printMsg(msg)
-                // don't let grow forever
-                // it's ok to reset if we just printed one.
-                // count = 0
             }
             count += 1
             // print 10% of the messages
@@ -98,7 +99,7 @@ func scale(name string, rec chan string) {
     }
 }
 
-func printMsg(msgs... interface{}) {
+func printMsg(msgs ...interface{}) {
     // amt := time.Second * time.Duration(rand.Intn(250))
     // time.Sleep(amt)
     fmt.Println(msgs)
@@ -114,6 +115,6 @@ func reader() (in chan string) {
             in <- scanner.Text()
         }
         close(in)
-    } ()
+    }()
     return
 }
