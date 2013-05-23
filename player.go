@@ -24,7 +24,7 @@ type lineMap map[string](chan string)
    100qps * 10%        == 10
 */
 func main() {
-    runtime.GOMAXPROCS(1)
+    runtime.GOMAXPROCS(4)
 
     lm := make(lineMap)
     in := reader()
