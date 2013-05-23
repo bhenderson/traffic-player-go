@@ -9,8 +9,6 @@ import (
     // "math/rand"
 )
 
-var done chan string
-
 type lineMap map[string](chan string)
 
 /*
@@ -26,22 +24,36 @@ type lineMap map[string](chan string)
 func main() {
     runtime.GOMAXPROCS(4)
 
+    var (
+        msg, name, pre string
+        ok             bool
+        rec            chan string
+    )
+
     lm := make(lineMap)
     in := reader()
-    done = make(chan string)
+    done := make(chan string)
 
     for {
         select {
-        case msg, ok := <-in:
+        case msg, ok = <-in:
             if !ok {
                 in = nil
                 break
             }
-            go prefix(lm, msg)
-        // run forever
-        // use select as a mutex so we don't add to lm and delete at the same
-        // time?
-        case name := <-done:
+            pre = msg[:4]
+
+            rec, ok = lm[pre]
+
+            if !ok {
+                rec = make(chan string)
+                lm[pre] = rec
+                go scale(pre, rec, done)
+            }
+
+            rec <- msg
+        // cleanup
+        case name = <-done:
             delete(lm, name)
             // TODO don't exit program.
             if len(lm) == 0 {
@@ -52,37 +64,24 @@ func main() {
     }
 }
 
-// per msg
-func prefix(lm lineMap, msg string) {
-    // msg == 'aaaa:Hi this is my message'
-    // type function
-    pre := msg[:4]
-
-    rec, ok := lm[pre]
-
-    if !ok {
-        rec = make(chan string)
-        lm[pre] = rec
-        go scale(pre, rec)
-    }
-
-    rec <- msg
-}
-
 // per type
 // keep track of how many per second you get.
 // then replay back a percentage of that.
 // the "per second" doesn't have to be synced with other types as it averages
 // out over time. Also, remove rec from lineMap if not received for a while.
-func scale(name string, rec chan string) {
+func scale(name string, rec, done chan string) {
+    var (
+        t   <-chan time.Time
+        msg string
+    )
+
     count := 0
     // print 1/num of the messages
-    num   := 10
-    var t <-chan time.Time
+    num := 10
 
     for {
         select {
-        case msg := <-rec:
+        case msg = <-rec:
             if count == 0 {
                 printMsg(msg)
             }
