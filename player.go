@@ -42,7 +42,6 @@ func main() {
         // use select as a mutex so we don't add to lm and delete at the same
         // time?
         case name := <-done:
-            fmt.Println("closing", name)
             delete(lm, name)
             // TODO don't exit program.
             if len(lm) == 0 {
@@ -90,8 +89,9 @@ func scale(name string, rec chan string) {
             count++
             count %= num
             // reset timer
-            t = time.After(5 * time.Second)
+            t = time.After(1 * time.Second)
         case <-t:
+            fmt.Println("closing", name, count)
             done <- name
             return
         }
@@ -101,7 +101,7 @@ func scale(name string, rec chan string) {
 func printMsg(msgs ...interface{}) {
     // amt := time.Second * time.Duration(rand.Intn(250))
     // time.Sleep(amt)
-    fmt.Println(msgs)
+    // fmt.Println(msgs)
 }
 
 // read from stdin and send line of text to channel in
