@@ -6,14 +6,14 @@ pre = ('a'..'z').to_a
 $stdout.sync = true
 
 begin
-  Timeout.timeout(2) do
+  Timeout.timeout(5) do
     while true do
       # sleep 0.01
       puts "#{pre.sample*4}:This is my message"
     end
   end
 rescue TimeoutError
-  # pre.pop
+  pre.pop
   retry unless pre.empty?
 end
 
