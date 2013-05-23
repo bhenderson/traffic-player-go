@@ -6,7 +6,7 @@ pre = ('a'..'z').to_a
 $stdout.sync = true
 
 begin
-  Timeout.timeout(5) do
+  Timeout.timeout(1) do
     while true do
       # sleep 0.01
       puts "#{pre.sample*4}:This is my message"

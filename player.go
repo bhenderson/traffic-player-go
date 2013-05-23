@@ -71,13 +71,14 @@ func main() {
 // out over time. Also, remove rec from lineMap if not received for a while.
 func scale(name string, rec, done chan string) {
     var (
-        t   <-chan time.Time
         msg string
     )
 
     count := 0
     // print 1/num of the messages
     num := 10
+    d := time.Second
+    t := time.NewTimer(d)
 
     for {
         select {
@@ -88,8 +89,8 @@ func scale(name string, rec, done chan string) {
             count++
             count %= num
             // reset timer
-            t = time.After(1 * time.Second)
-        case <-t:
+            t.Reset(d)
+        case <-t.C:
             fmt.Println("closing", name, count)
             done <- name
             return
