@@ -77,6 +77,8 @@ func prefix(lm lineMap, msg string) {
 // out over time. Also, remove rec from lineMap if not received for a while.
 func scale(name string, rec chan string) {
     count := 0
+    // print 1/num of the messages
+    num   := 10
     var t <-chan time.Time
 
     for {
@@ -85,11 +87,8 @@ func scale(name string, rec chan string) {
             if count == 0 {
                 printMsg(msg)
             }
-            count += 1
-            // print 10% of the messages
-            if count >= 10 {
-                count = 0
-            }
+            count++
+            count %= num
             // reset timer
             t = time.After(5 * time.Second)
         case <-t:
