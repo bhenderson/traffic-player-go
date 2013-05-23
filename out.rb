@@ -13,7 +13,7 @@ begin
     end
   end
 rescue TimeoutError
-  pre.pop
+  # pre.pop
   retry unless pre.empty?
 end
 

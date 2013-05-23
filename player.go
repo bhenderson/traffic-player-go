@@ -6,7 +6,6 @@ import (
     "os"
     "runtime"
     "time"
-    // "math/rand"
 )
 
 type lineMap map[string](chan string)
@@ -22,7 +21,7 @@ type lineMap map[string](chan string)
    100qps * 10%        == 10
 */
 func main() {
-    runtime.GOMAXPROCS(4)
+    runtime.GOMAXPROCS(1)
 
     var (
         msg, name, pre string
@@ -99,8 +98,6 @@ func scale(name string, rec, done chan string) {
 }
 
 func printMsg(msgs ...interface{}) {
-    // amt := time.Second * time.Duration(rand.Intn(250))
-    // time.Sleep(amt)
     // fmt.Println(msgs)
 }
 
